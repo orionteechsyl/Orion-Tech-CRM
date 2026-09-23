@@ -8,8 +8,10 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxOHRx6hwrVXW0B1IRUO_BbsluyNYiYEkLEFLDVjkpDuNo7ZIogiGp2tcFwG_lwkHcJ/exec";
 
 // Default PIN (change here). Session is remembered in localStorage.
-const DEFAULT_PIN = "2026";
+const DEFAULT_PIN = "1466";
 const AUTH_STORAGE_KEY = "orionTechAuth";
+const LOGO_STORAGE_KEY = "orionTechLogo"; // base64 data URL of the custom shop logo
+const SPLASH_DURATION_MS = 2000;
 
 // Country code used to build WhatsApp / Call links from local phone numbers.
 const WHATSAPP_COUNTRY_CODE = "88"; // Bangladesh
@@ -23,14 +25,31 @@ const state = {
   expenses: [],
   hr: [],
   marketing: [],
-  wishlist: []
+  wishlist: [],
+  vault: [],
+  contentTasks: [],
+  complaints: [],
+  employees: []
 };
 
 let pinEntry = "";
+let activeWaTemplate = "welcome";
+const vaultVisible = {}; // id -> boolean, whether a vault card's secret is currently shown
+
+const WA_TEMPLATES = {
+  welcome: function (name) { return `Hello ${name || "there"}, welcome to Orion Tech! Thank you for choosing us — let us know if you need anything.`; },
+  due: function (name) { return `Hello ${name || "there"}, this is a gentle reminder about your remaining due balance with Orion Tech. Please let us know a convenient time to settle it.`; },
+  feedback: function (name) { return `Hello ${name || "there"}, we'd love to hear how your recent purchase from Orion Tech is going. Any feedback for us?`; },
+  referral: function (name) { return `Hello ${name || "there"}, thank you so much for referring a customer to Orion Tech! We really appreciate your support.`; },
+  birthday: function (name) { return `Happy Birthday, ${name || "friend"}! 🎉 Wishing you a wonderful day from all of us at Orion Tech.`; },
+  anniversary: function (name) { return `Hello ${name || "there"}, happy anniversary with your device from Orion Tech! Thank you for being with us.`; }
+};
 
 /* ================= INIT ================= */
 
 document.addEventListener("DOMContentLoaded", function () {
+  initSplashScreen();
+  initLogoBranding();
   initPinLogin();
 
   initSidebar();
@@ -38,12 +57,138 @@ document.addEventListener("DOMContentLoaded", function () {
   initYearFilter();
   initForms();
   initSearch();
+  initVaultUI();
+  initTaskFilters();
+  initPayrollFilters();
+  initWhatsappTemplates();
+  initExportPrint();
   setDefaultDates();
 
   if (isAuthenticated()) {
     unlockApp(false);
   }
 });
+
+/* ================= SPLASH SCREEN ================= */
+
+function initSplashScreen() {
+  const splash = document.getElementById("splashScreen");
+  if (!splash) return;
+
+  setTimeout(function () {
+    splash.classList.add("fade-out");
+    setTimeout(function () {
+      splash.classList.add("hidden");
+    }, 700); // matches CSS fade-out transition duration
+  }, SPLASH_DURATION_MS);
+}
+
+/* ================= CUSTOM SHOP LOGO / BRANDING ================= */
+
+function getSavedLogo() {
+  return localStorage.getItem(LOGO_STORAGE_KEY) || "";
+}
+
+function applyLogoToUI() {
+  const logo = getSavedLogo();
+  const markIds = ["splashLogoMark", "pinLogoMark", "sidebarLogoMark", "topbarLogoMark"];
+
+  markIds.forEach(function (id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (logo) {
+      el.innerHTML = '<img src="' + logo + '" alt="Shop Logo" />';
+    } else {
+      el.textContent = "OT";
+    }
+  });
+
+  const modalPreview = document.getElementById("logoModalPreview");
+  if (modalPreview) {
+    modalPreview.innerHTML = logo ? '<img src="' + logo + '" alt="Shop Logo" />' : "OT";
+  }
+}
+
+function initLogoBranding() {
+  applyLogoToUI();
+
+  const editBtn = document.getElementById("logoEditBtn");
+  const overlay = document.getElementById("logoModalOverlay");
+  const closeBtn = document.getElementById("logoModalCloseBtn");
+  const fileInput = document.getElementById("logoFileInput");
+  const saveBtn = document.getElementById("logoSaveBtn");
+  const removeBtn = document.getElementById("logoRemoveBtn");
+  const modalPreview = document.getElementById("logoModalPreview");
+
+  let pendingLogoDataUrl = null;
+
+  function openModal() {
+    pendingLogoDataUrl = null;
+    if (fileInput) fileInput.value = "";
+    applyLogoToUI();
+    if (overlay) overlay.classList.remove("hidden");
+  }
+
+  function closeModal() {
+    if (overlay) overlay.classList.add("hidden");
+  }
+
+  if (editBtn) editBtn.addEventListener("click", openModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (overlay) {
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeModal();
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", function () {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        showToast("Please select an image file.", "error");
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        showToast("Logo image should be under 2MB.", "error");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        pendingLogoDataUrl = e.target.result;
+        if (modalPreview) {
+          modalPreview.innerHTML = '<img src="' + pendingLogoDataUrl + '" alt="Shop Logo Preview" />';
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener("click", function () {
+      if (!pendingLogoDataUrl) {
+        showToast("Choose an image file first.", "error");
+        return;
+      }
+      localStorage.setItem(LOGO_STORAGE_KEY, pendingLogoDataUrl);
+      applyLogoToUI();
+      closeModal();
+      showToast("Shop logo updated.", "success");
+    });
+  }
+
+  if (removeBtn) {
+    removeBtn.addEventListener("click", function () {
+      localStorage.removeItem(LOGO_STORAGE_KEY);
+      pendingLogoDataUrl = null;
+      if (fileInput) fileInput.value = "";
+      applyLogoToUI();
+      showToast("Shop logo removed.", "success");
+    });
+  }
+}
 
 function bootDashboardData() {
   checkConnection();
@@ -54,6 +199,10 @@ function bootDashboardData() {
   loadHR();
   loadMarketing();
   loadWishlist();
+  loadVault();
+  loadContentTasks();
+  loadComplaints();
+  loadEmployees();
 }
 
 /* ================= PIN LOGIN ================= */
@@ -208,6 +357,13 @@ function switchTab(tab) {
 
   if (tab === "care") {
     renderCustomerCare();
+    renderWaBulkList();
+  }
+  if (tab === "vault") {
+    renderVaultCards();
+  }
+  if (tab === "content") {
+    renderTaskCards();
   }
 }
 
@@ -386,6 +542,10 @@ function loadDashboard() {
     // Marketing tab mini snapshot uses the same filtered period
     document.getElementById("miniFbRevenue").textContent = formatCurrency(res.facebookRevenue || 0);
     document.getElementById("miniMarketingSpend").textContent = formatCurrency(res.totalMarketing || 0);
+
+    // 50/50 partnership split
+    document.getElementById("splitShamim").textContent = formatCurrency(res.shamimShare || 0);
+    document.getElementById("splitMahfuj").textContent = formatCurrency(res.mahfujShare || 0);
   });
 }
 
@@ -420,6 +580,26 @@ function initForms() {
   document.getElementById("wishlistForm").addEventListener("submit", function (e) {
     e.preventDefault();
     submitWishlistForm(e.target);
+  });
+
+  document.getElementById("vaultForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    submitVaultForm(e.target);
+  });
+
+  document.getElementById("contentTaskForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    submitContentTaskForm(e.target);
+  });
+
+  document.getElementById("employeeForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    submitEmployeeForm(e.target);
+  });
+
+  document.getElementById("complaintForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    submitComplaintForm(e.target);
   });
 
   const fileInput = document.getElementById("supplierFileInput");
@@ -465,13 +645,14 @@ function loadSales() {
 
 function renderSalesTable() {
   const tbody = document.querySelector("#salesTable tbody");
+  const filtered = getFilteredSales();
 
-  if (!state.sales.length) {
+  if (!filtered.length) {
     tbody.innerHTML = '<tr><td class="empty-cell" colspan="9">No sales recorded yet.</td></tr>';
     return;
   }
 
-  const rows = state.sales.slice().reverse().slice(0, 25).map(function (row) {
+  const rows = filtered.slice().reverse().slice(0, 100).map(function (row) {
     const source = row.Source || "Walk-in";
     return `<tr>
       <td>${formatDate(row.Date)}</td>
@@ -730,6 +911,7 @@ function loadHR() {
     if (!res.success) return;
     state.hr = res.data || [];
     renderHRTable();
+    renderPayrollTable();
   });
 }
 
@@ -747,6 +929,87 @@ function renderHRTable() {
       <td>${row.Type || "-"}</td>
       <td>${row.PersonName || "-"}</td>
       <td>${formatCurrency(row.Amount)}</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = rows.join("");
+}
+
+/* ================= EMPLOYEE PAYROLL MODULE ================= */
+
+function initPayrollFilters() {
+  const yearSelect = document.getElementById("payrollFilterYear");
+  const currentYear = new Date().getFullYear();
+  let options = '<option value="">All Years</option>';
+  for (let y = currentYear; y >= currentYear - 5; y--) {
+    options += `<option value="${y}" ${y === currentYear ? "selected" : ""}>${y}</option>`;
+  }
+  yearSelect.innerHTML = options;
+
+  document.getElementById("payrollFilterMonth").addEventListener("change", renderPayrollTable);
+  document.getElementById("payrollFilterYear").addEventListener("change", renderPayrollTable);
+}
+
+function submitEmployeeForm(form) {
+  const formData = new FormData(form);
+  const payload = Object.fromEntries(formData.entries());
+
+  showLoading(true);
+
+  callApi("addEmployee", payload).then(function (res) {
+    showLoading(false);
+
+    if (res.success) {
+      showToast(res.message || "Employee saved.", "success");
+      form.reset();
+      loadEmployees();
+    } else {
+      showToast(res.message || "Failed to save employee.", "error");
+    }
+  });
+}
+
+function loadEmployees() {
+  callApi("getEmployees", {}).then(function (res) {
+    if (!res.success) return;
+    state.employees = res.data || [];
+    renderPayrollTable();
+  });
+}
+
+function renderPayrollTable() {
+  const tbody = document.querySelector("#payrollTable tbody");
+  if (!tbody) return;
+
+  if (!state.employees.length) {
+    tbody.innerHTML = '<tr><td class="empty-cell" colspan="4">No employees added yet.</td></tr>';
+    return;
+  }
+
+  const monthFilter = document.getElementById("payrollFilterMonth").value;
+  const yearFilter = document.getElementById("payrollFilterYear").value;
+
+  const rows = state.employees.map(function (emp) {
+    const baseSalary = parseFloat(emp.BaseSalary) || 0;
+
+    const paid = state.hr
+      .filter(function (row) {
+        if (row.Type !== "Salary" || row.PersonName !== emp.Name) return false;
+        const d = new Date(row.Date);
+        if (isNaN(d.getTime())) return false;
+        if (monthFilter && (d.getMonth() + 1) !== parseInt(monthFilter)) return false;
+        if (yearFilter && d.getFullYear() !== parseInt(yearFilter)) return false;
+        return true;
+      })
+      .reduce(function (sum, row) { return sum + (parseFloat(row.Amount) || 0); }, 0);
+
+    const due = baseSalary - paid;
+
+    return `<tr>
+      <td>${escapeHtml(emp.Name || "-")}</td>
+      <td>${formatCurrency(baseSalary)}</td>
+      <td>${formatCurrency(paid)}</td>
+      <td style="color:${due > 0 ? "var(--danger)" : "var(--success)"}; font-weight:700;">${formatCurrency(due)}</td>
     </tr>`;
   });
 
@@ -921,4 +1184,496 @@ function renderWishlist() {
       ${actionIconsHtml(row.Phone, row.CustomerName)}
     </div>`;
   }).join("");
+}
+
+/* ================= SECURE VAULT MODULE ================= */
+
+function initVaultUI() {
+  const toggleBtn = document.getElementById("vaultFormToggleBtn");
+  const secretInput = document.getElementById("vaultSecretInput");
+
+  toggleBtn.addEventListener("click", function () {
+    const showing = secretInput.type === "text";
+    secretInput.type = showing ? "password" : "text";
+    toggleBtn.textContent = showing ? "👁" : "🙈";
+  });
+
+  document.getElementById("vaultSearchInput").addEventListener("input", renderVaultCards);
+}
+
+function submitVaultForm(form) {
+  const formData = new FormData(form);
+  const payload = Object.fromEntries(formData.entries());
+
+  showLoading(true);
+
+  callApi("addVaultEntry", payload).then(function (res) {
+    showLoading(false);
+
+    if (res.success) {
+      showToast("Vault entry saved.", "success");
+      form.reset();
+      document.getElementById("vaultSecretInput").type = "password";
+      document.getElementById("vaultFormToggleBtn").textContent = "👁";
+      loadVault();
+    } else {
+      showToast(res.message || "Failed to save vault entry.", "error");
+    }
+  });
+}
+
+function loadVault() {
+  callApi("getVaultEntries", {}).then(function (res) {
+    if (!res.success) return;
+    state.vault = res.data || [];
+    if (state.currentTab === "vault") renderVaultCards();
+  });
+}
+
+function renderVaultCards() {
+  const container = document.getElementById("vaultCards");
+  const query = (document.getElementById("vaultSearchInput").value || "").toLowerCase();
+
+  let list = state.vault.slice().reverse();
+  if (query) {
+    list = list.filter(function (row) {
+      return (row.Title || "").toLowerCase().indexOf(query) !== -1 ||
+        (row.Category || "").toLowerCase().indexOf(query) !== -1 ||
+        (row.Username || "").toLowerCase().indexOf(query) !== -1;
+    });
+  }
+
+  if (!list.length) {
+    container.innerHTML = '<p class="muted-text">No vault entries match.</p>';
+    return;
+  }
+
+  container.innerHTML = list.map(function (row) {
+    const isVisible = !!vaultVisible[row.ID];
+    const secretDisplay = isVisible ? escapeHtml(row.Secret || "") : "••••••••";
+
+    return `<div class="vault-card" data-id="${row.ID}">
+      <div class="vault-card-top">
+        <span class="vault-card-title">${escapeHtml(row.Title || "-")}</span>
+        <span class="vault-category-badge">${escapeHtml(row.Category || "Other")}</span>
+      </div>
+      ${row.Username ? `<div class="vault-card-row"><span>Username / Account</span><span>${escapeHtml(row.Username)}</span></div>` : ""}
+      <div class="vault-card-row">
+        <span>Password / PIN</span>
+        <span class="vault-secret-value">${secretDisplay}</span>
+      </div>
+      ${row.Notes ? `<div class="vault-notes">${escapeHtml(row.Notes)}</div>` : ""}
+      <div class="vault-card-actions">
+        <button class="vault-toggle-row-btn" data-id="${row.ID}">${isVisible ? "Hide" : "Show"}</button>
+        <button class="vault-copy-row-btn" data-id="${row.ID}">Copy Password</button>
+        <button class="vault-delete-btn" data-id="${row.ID}">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  container.querySelectorAll(".vault-toggle-row-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const id = btn.getAttribute("data-id");
+      vaultVisible[id] = !vaultVisible[id];
+      renderVaultCards();
+    });
+  });
+
+  container.querySelectorAll(".vault-copy-row-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const id = btn.getAttribute("data-id");
+      const entry = state.vault.find(function (r) { return r.ID === id; });
+      if (!entry) return;
+
+      copyToClipboard(entry.Secret || "").then(function () {
+        showToast("Password copied to clipboard.", "success");
+      }).catch(function () {
+        showToast("Could not copy — copy it manually.", "error");
+      });
+    });
+  });
+
+  container.querySelectorAll(".vault-delete-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const id = btn.getAttribute("data-id");
+      if (!confirm("Delete this vault entry? This cannot be undone.")) return;
+
+      showLoading(true);
+      callApi("deleteVaultEntry", { id: id }).then(function (res) {
+        showLoading(false);
+        if (res.success) {
+          showToast("Vault entry deleted.", "success");
+          delete vaultVisible[id];
+          loadVault();
+        } else {
+          showToast(res.message || "Failed to delete entry.", "error");
+        }
+      });
+    });
+  });
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise(function (resolve, reject) {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      resolve();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+function escapeHtml(str) {
+  return (str || "").toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/* ================= CONTENT & TASKS MODULE ================= */
+
+function initTaskFilters() {
+  document.getElementById("taskFilterMonth").addEventListener("change", renderTaskCards);
+  document.getElementById("taskFilterAssignee").addEventListener("change", renderTaskCards);
+}
+
+function submitContentTaskForm(form) {
+  const formData = new FormData(form);
+  const payload = Object.fromEntries(formData.entries());
+
+  // Checkboxes are only included in FormData when checked, so set explicit Yes/No values.
+  payload.beforeFinal = form.elements.beforeFinal.checked ? "Yes" : "No";
+  payload.deliveryFinalized = form.elements.deliveryFinalized.checked ? "Yes" : "No";
+  payload.thumbnailReady = form.elements.thumbnailReady.checked ? "Yes" : "No";
+  payload.uploadedToSocial = form.elements.uploadedToSocial.checked ? "Yes" : "No";
+
+  showLoading(true);
+
+  callApi("addContentTask", payload).then(function (res) {
+    showLoading(false);
+
+    if (res.success) {
+      showToast("Task added.", "success");
+      form.reset();
+      setDefaultDates();
+      loadContentTasks();
+    } else {
+      showToast(res.message || "Failed to add task.", "error");
+    }
+  });
+}
+
+function loadContentTasks() {
+  callApi("getContentTasks", {}).then(function (res) {
+    if (!res.success) return;
+    state.contentTasks = res.data || [];
+    if (state.currentTab === "content") renderTaskCards();
+  });
+}
+
+const STATUS_OPTIONS = ["Pending", "First Version", "Completed"];
+const TASK_FLAG_FIELDS = [
+  { key: "BeforeFinal", label: "Before Final" },
+  { key: "DeliveryFinalized", label: "Delivery Finalized" },
+  { key: "ThumbnailReady", label: "Thumbnail Ready" },
+  { key: "UploadedToSocial", label: "Uploaded YT/FB" }
+];
+
+function statusClass(status) {
+  return "status-" + (status || "pending").toString().toLowerCase().replace(/\s+/g, "-");
+}
+
+function renderTaskCards() {
+  const container = document.getElementById("taskCards");
+  const monthFilter = document.getElementById("taskFilterMonth").value;
+  const assigneeFilter = document.getElementById("taskFilterAssignee").value;
+
+  let list = state.contentTasks.slice().reverse();
+
+  if (monthFilter) {
+    list = list.filter(function (row) {
+      const d = new Date(row.Date);
+      return !isNaN(d.getTime()) && (d.getMonth() + 1) === parseInt(monthFilter);
+    });
+  }
+  if (assigneeFilter) {
+    list = list.filter(function (row) { return row.AssignedTo === assigneeFilter; });
+  }
+
+  if (!list.length) {
+    container.innerHTML = '<p class="muted-text">No tasks match these filters.</p>';
+    return;
+  }
+
+  container.innerHTML = list.map(function (row) {
+    const optionsHtml = STATUS_OPTIONS.map(function (s) {
+      return `<option value="${s}" ${s === row.Status ? "selected" : ""}>${s}</option>`;
+    }).join("");
+
+    const flagsHtml = TASK_FLAG_FIELDS.map(function (f) {
+      const on = row[f.key] === "Yes";
+      return `<button type="button" class="task-flag-pill ${on ? "on" : ""}" data-id="${row.ID}" data-field="${f.key}" data-value="${on ? "No" : "Yes"}">${on ? "✓" : "○"} ${f.label}</button>`;
+    }).join("");
+
+    return `<div class="task-card" data-id="${row.ID}">
+      <div class="task-card-top">
+        <span class="task-file-name">${escapeHtml(row.FileName || "Untitled")}</span>
+        <select class="task-status-select ${statusClass(row.Status)}" data-id="${row.ID}">${optionsHtml}</select>
+      </div>
+      <div class="task-card-meta">
+        <span>📅 ${formatDate(row.Date)}</span>
+        <span>👤 ${escapeHtml(row.AssignedTo || "Unassigned")}</span>
+      </div>
+      <div class="task-flags">${flagsHtml}</div>
+      <div class="task-card-links">
+        ${row.VideoLink ? `<a href="${row.VideoLink}" target="_blank" rel="noopener">Video Link</a>` : ""}
+        ${row.ThumbnailLink ? `<a href="${row.ThumbnailLink}" target="_blank" rel="noopener">Thumbnail</a>` : ""}
+      </div>
+      ${row.Caption ? `<div class="task-card-caption">${escapeHtml(row.Caption)}</div>` : ""}
+      <div class="task-card-actions">
+        <button class="task-delete-btn" data-id="${row.ID}">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  container.querySelectorAll(".task-status-select").forEach(function (select) {
+    select.addEventListener("change", function () {
+      const id = select.getAttribute("data-id");
+      select.className = "task-status-select " + statusClass(select.value);
+
+      callApi("updateContentTaskStatus", { id: id, status: select.value }).then(function (res) {
+        if (res.success) {
+          showToast("Task status updated.", "success");
+          const row = state.contentTasks.find(function (r) { return r.ID === id; });
+          if (row) row.Status = select.value;
+        } else {
+          showToast(res.message || "Failed to update status.", "error");
+        }
+      });
+    });
+  });
+
+  container.querySelectorAll(".task-flag-pill").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const id = btn.getAttribute("data-id");
+      const field = btn.getAttribute("data-field");
+      const value = btn.getAttribute("data-value");
+
+      callApi("updateContentTaskField", { id: id, field: field, value: value }).then(function (res) {
+        if (res.success) {
+          const row = state.contentTasks.find(function (r) { return r.ID === id; });
+          if (row) row[field] = value;
+          renderTaskCards();
+        } else {
+          showToast(res.message || "Failed to update task.", "error");
+        }
+      });
+    });
+  });
+
+  container.querySelectorAll(".task-delete-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const id = btn.getAttribute("data-id");
+      if (!confirm("Delete this task?")) return;
+
+      showLoading(true);
+      callApi("deleteContentTask", { id: id }).then(function (res) {
+        showLoading(false);
+        if (res.success) {
+          showToast("Task deleted.", "success");
+          loadContentTasks();
+        } else {
+          showToast(res.message || "Failed to delete task.", "error");
+        }
+      });
+    });
+  });
+}
+
+/* ================= COMPLAINTS MODULE ================= */
+
+function submitComplaintForm(form) {
+  const formData = new FormData(form);
+  const payload = Object.fromEntries(formData.entries());
+  payload.status = "Open";
+
+  showLoading(true);
+
+  callApi("addComplaint", payload).then(function (res) {
+    showLoading(false);
+
+    if (res.success) {
+      showToast("Complaint logged.", "success");
+      form.reset();
+      setDefaultDates();
+      loadComplaints();
+    } else {
+      showToast(res.message || "Failed to log complaint.", "error");
+    }
+  });
+}
+
+function loadComplaints() {
+  callApi("getComplaints", {}).then(function (res) {
+    if (!res.success) return;
+    state.complaints = res.data || [];
+    renderComplaintsTable();
+  });
+}
+
+function renderComplaintsTable() {
+  const tbody = document.querySelector("#complaintsTable tbody");
+
+  if (!state.complaints.length) {
+    tbody.innerHTML = '<tr><td class="empty-cell" colspan="5">No complaints logged.</td></tr>';
+    return;
+  }
+
+  const rows = state.complaints.slice().reverse().slice(0, 30).map(function (row) {
+    const status = row.Status || "Open";
+    return `<tr>
+      <td>${formatDate(row.Date)}</td>
+      <td>${escapeHtml(row.CustomerName || "-")}</td>
+      <td>${escapeHtml(row.Phone || "-")}</td>
+      <td>${escapeHtml(row.Issue || "-")}</td>
+      <td><button class="status-badge ${statusClass(status)}" data-id="${row.ID}" data-status="${status}">${status}</button></td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = rows.join("");
+
+  tbody.querySelectorAll(".status-badge").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const id = btn.getAttribute("data-id");
+      const newStatus = btn.getAttribute("data-status") === "Open" ? "Resolved" : "Open";
+
+      callApi("updateComplaintStatus", { id: id, status: newStatus }).then(function (res) {
+        if (res.success) {
+          const row = state.complaints.find(function (r) { return r.ID === id; });
+          if (row) row.Status = newStatus;
+          renderComplaintsTable();
+        } else {
+          showToast(res.message || "Failed to update status.", "error");
+        }
+      });
+    });
+  });
+}
+
+/* ================= WHATSAPP TEMPLATES & BULK CAMPAIGN ================= */
+
+function initWhatsappTemplates() {
+  const grid = document.getElementById("waTemplateGrid");
+
+  grid.querySelectorAll(".wa-template-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      grid.querySelectorAll(".wa-template-btn").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      activeWaTemplate = btn.getAttribute("data-template");
+      renderWaBulkList();
+    });
+  });
+
+  grid.querySelector('[data-template="welcome"]').classList.add("active");
+}
+
+function renderWaBulkList() {
+  const container = document.getElementById("waBulkList");
+  const builder = WA_TEMPLATES[activeWaTemplate] || WA_TEMPLATES.welcome;
+
+  // De-duplicate customers by phone number across sales records
+  const seen = {};
+  const customers = [];
+  state.sales.forEach(function (row) {
+    const phone = (row.Phone || "").toString().trim();
+    if (!phone || seen[phone]) return;
+    seen[phone] = true;
+    customers.push({ name: row.BuyerName, phone: phone });
+  });
+
+  if (!customers.length) {
+    container.innerHTML = '<p class="muted-text">No customers with phone numbers yet.</p>';
+    return;
+  }
+
+  container.innerHTML = customers.map(function (c) {
+    const message = builder(c.name);
+    return `<div class="wa-bulk-row">
+      <span><span class="wa-bulk-name">${escapeHtml(c.name || "-")}</span><span class="wa-bulk-phone">${escapeHtml(c.phone)}</span></span>
+      <a class="wa-bulk-send-btn" href="${whatsappLink(c.phone, message)}" target="_blank" rel="noopener">Send</a>
+    </div>`;
+  }).join("");
+}
+
+/* ================= EXPORT CSV & PRINT ================= */
+
+function initExportPrint() {
+  document.getElementById("exportSalesCsvBtn").addEventListener("click", exportSalesCsv);
+  document.getElementById("printSalesBtn").addEventListener("click", printSalesView);
+  document.getElementById("salesDateFilterBtn").addEventListener("click", renderSalesTable);
+}
+
+function getFilteredSales() {
+  const from = document.getElementById("salesFromDate").value;
+  const to = document.getElementById("salesToDate").value;
+
+  if (!from && !to) return state.sales.slice();
+
+  return state.sales.filter(function (row) {
+    const d = new Date(row.Date);
+    if (isNaN(d.getTime())) return false;
+    if (from && d < new Date(from)) return false;
+    if (to && d > new Date(to)) return false;
+    return true;
+  });
+}
+
+function exportSalesCsv() {
+  const list = getFilteredSales();
+  if (!list.length) {
+    showToast("No sales to export for the selected range.", "error");
+    return;
+  }
+
+  const headers = ["Date", "BuyerName", "Phone", "Location", "LaptopModel", "SerialNumber", "Price", "DueAmount", "Source"];
+  const csvRows = [headers.join(",")];
+
+  list.forEach(function (row) {
+    const line = headers.map(function (h) {
+      const val = (row[h] !== undefined ? row[h] : "").toString().replace(/"/g, '""');
+      return `"${val}"`;
+    });
+    csvRows.push(line.join(","));
+  });
+
+  const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "orion-tech-sales-" + new Date().toISOString().split("T")[0] + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast("CSV exported.", "success");
+}
+
+function printSalesView() {
+  const wrap = document.getElementById("salesTableWrap");
+  wrap.classList.add("print-active");
+  window.print();
+  setTimeout(function () { wrap.classList.remove("print-active"); }, 500);
 }

@@ -10,11 +10,23 @@
 </head>
 <body>
 
+<!-- ================= SPLASH SCREEN ================= -->
+<div id="splashScreen" class="splash-screen">
+  <div class="splash-inner">
+    <div class="splash-logo-wrap" id="splashLogoWrap">
+      <div class="brand-mark" id="splashLogoMark">OT</div>
+    </div>
+    <div class="splash-title">Orion Tech</div>
+    <div class="splash-subtitle">CRM &amp; ERP Suite</div>
+    <div class="splash-loader"></div>
+  </div>
+</div>
+
 <!-- ================= PIN LOGIN OVERLAY ================= -->
 <div id="pinOverlay" class="pin-overlay">
   <div class="pin-box">
     <div class="pin-logo">
-      <div class="brand-mark">OT</div>
+      <div class="brand-mark" id="pinLogoMark">OT</div>
     </div>
     <h2>Orion Tech</h2>
     <p class="pin-subtitle">Enter your security PIN to continue</p>
@@ -51,7 +63,7 @@
     <button id="menuToggle" class="icon-btn" aria-label="Toggle Menu">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
-    <span class="mobile-brand">Orion Tech</span>
+    <span class="mobile-brand"><span class="brand-mark" id="topbarLogoMark">OT</span> Orion Tech</span>
     <button id="mobileLockBtn" class="icon-btn" aria-label="Lock">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="2"/></svg>
     </button>
@@ -60,10 +72,15 @@
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">OT</div>
+      <div class="brand-mark" id="sidebarLogoMark">OT</div>
       <div class="brand-text">
         <strong>Orion Tech</strong>
         <span>CRM &amp; ERP</span>
+      </div>
+      <div class="sidebar-brand-actions">
+        <button id="logoEditBtn" class="logo-edit-btn" title="Set shop logo" aria-label="Set shop logo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
 
@@ -91,6 +108,14 @@
       <button class="nav-item" data-tab="accounts">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span>Accounts &amp; HR</span>
+      </button>
+      <button class="nav-item" data-tab="content">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 18v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 9l4 2.5L10 14V9z" fill="currentColor"/></svg>
+        <span>Content &amp; Tasks</span>
+      </button>
+      <button class="nav-item" data-tab="vault">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="15" r="1.6" fill="currentColor"/></svg>
+        <span>Secure Vault</span>
       </button>
     </nav>
 
@@ -178,6 +203,23 @@
       <div class="panel-card">
         <h3>Quick Summary</h3>
         <p id="dashboardSummaryText" class="muted-text">Loading dashboard data...</p>
+      </div>
+
+      <div class="panel-card">
+        <h3>50 / 50 Partnership Split <span class="muted-text" style="font-weight:400;">(Net Profit only, selected period)</span></h3>
+        <div class="split-grid">
+          <div class="split-card">
+            <span class="split-name">Shamim</span>
+            <span class="split-amount" id="splitShamim">৳0</span>
+            <span class="split-tag">50% share</span>
+          </div>
+          <div class="split-card">
+            <span class="split-name">Mahfuj</span>
+            <span class="split-amount" id="splitMahfuj">৳0</span>
+            <span class="split-tag">50% share</span>
+          </div>
+        </div>
+        <p class="muted-text split-note">If Net Profit is negative for the period, no split is shown (both shares read ৳0) — losses are absorbed before any split is calculated.</p>
       </div>
     </section>
 
@@ -267,8 +309,17 @@
       </div>
 
       <div class="panel-card">
-        <h3>Recent Sales</h3>
-        <div class="table-wrap">
+        <div class="panel-card-header-row">
+          <h3>Recent Sales</h3>
+          <div class="filter-bar">
+            <input type="date" id="salesFromDate" title="From date" />
+            <input type="date" id="salesToDate" title="To date" />
+            <button id="salesDateFilterBtn" class="btn btn-secondary">Filter</button>
+            <button id="exportSalesCsvBtn" class="btn btn-secondary">Export CSV</button>
+            <button id="printSalesBtn" class="btn btn-secondary">Print View</button>
+          </div>
+        </div>
+        <div class="table-wrap" id="salesTableWrap">
           <table class="data-table" id="salesTable">
             <thead>
               <tr>
@@ -441,6 +492,53 @@
         </div>
       </div>
 
+      <div class="panel-card">
+        <h3>WhatsApp Automation &amp; Bulk Campaign</h3>
+        <p class="muted-text">Pick a message template, then send it individually from Recent Sales/Wishlist, or open a bulk run across every customer below (each opens as its own WhatsApp chat — browsers require a click per message, there is no silent auto-send).</p>
+        <div class="wa-template-grid" id="waTemplateGrid">
+          <button class="wa-template-btn" data-template="welcome">👋 Welcome</button>
+          <button class="wa-template-btn" data-template="due">⏳ Due Reminder</button>
+          <button class="wa-template-btn" data-template="feedback">💬 Feedback</button>
+          <button class="wa-template-btn" data-template="referral">🤝 Referral Thanks</button>
+          <button class="wa-template-btn" data-template="birthday">🎂 Birthday</button>
+          <button class="wa-template-btn" data-template="anniversary">🎉 Anniversary</button>
+        </div>
+        <div id="waBulkList" class="wa-bulk-list"></div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-card-header-row">
+          <h3>Complaints &amp; Remarks</h3>
+        </div>
+        <form id="complaintForm" class="form-grid">
+          <div class="form-field">
+            <label>Date</label>
+            <input type="date" name="date" required />
+          </div>
+          <div class="form-field">
+            <label>Customer Name</label>
+            <input type="text" name="customerName" placeholder="Full name" required />
+          </div>
+          <div class="form-field">
+            <label>Phone Number</label>
+            <input type="tel" name="phone" placeholder="01xxxxxxxxx" />
+          </div>
+          <div class="form-field full-width">
+            <label>Issue / Remark</label>
+            <input type="text" name="issue" placeholder="Describe the complaint or remark" required />
+          </div>
+          <div class="form-actions full-width">
+            <button type="submit" class="btn btn-primary">Log Complaint</button>
+          </div>
+        </form>
+        <div class="table-wrap">
+          <table class="data-table" id="complaintsTable">
+            <thead><tr><th>Date</th><th>Customer</th><th>Phone</th><th>Issue</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="grid-2col">
         <div class="panel-card">
           <h3>Add to Wishlist / Pre-Order</h3>
@@ -573,9 +671,228 @@
           </div>
         </div>
       </div>
+
+      <div class="panel-card">
+        <div class="panel-card-header-row">
+          <h3>Employee Payroll</h3>
+          <div class="filter-bar">
+            <select id="payrollFilterMonth">
+              <option value="">All Months</option>
+              <option value="1">January</option><option value="2">February</option>
+              <option value="3">March</option><option value="4">April</option>
+              <option value="5">May</option><option value="6">June</option>
+              <option value="7">July</option><option value="8">August</option>
+              <option value="9">September</option><option value="10">October</option>
+              <option value="11">November</option><option value="12">December</option>
+            </select>
+            <select id="payrollFilterYear"></select>
+          </div>
+        </div>
+        <p class="muted-text">Set a base salary per employee below. "Paid" totals Employee Salary payments logged in the form above for the selected period; "Due" is Base Salary minus Paid.</p>
+        <div class="grid-2col">
+          <form id="employeeForm" class="form-grid">
+            <div class="form-field">
+              <label>Employee Name</label>
+              <input type="text" name="name" placeholder="e.g. Huzaifa" required />
+            </div>
+            <div class="form-field">
+              <label>Base Salary (৳ / month)</label>
+              <input type="number" name="baseSalary" min="0" step="0.01" required />
+            </div>
+            <div class="form-actions full-width">
+              <button type="submit" class="btn btn-primary">Save Employee</button>
+            </div>
+          </form>
+          <div class="table-wrap">
+            <table class="data-table" id="payrollTable">
+              <thead><tr><th>Employee</th><th>Base Salary</th><th>Paid</th><th>Due</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CONTENT & TASKS TAB ================= -->
+    <section class="tab-panel" id="tab-content">
+      <div class="panel-header">
+        <div>
+          <h1>Content &amp; Task Pipeline</h1>
+          <p class="subtitle">Assign, track and manage social content production</p>
+        </div>
+        <div class="filter-bar">
+          <select id="taskFilterMonth">
+            <option value="">All Months</option>
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+          <select id="taskFilterAssignee">
+            <option value="">Everyone</option>
+            <option value="Mahfuj">Mahfuj</option>
+            <option value="Mahdi">Mahdi</option>
+            <option value="Huzaifa">Huzaifa</option>
+            <option value="Sanjida">Sanjida</option>
+            <option value="Abdullah">Abdullah</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel-card">
+          <h3>New Content Task</h3>
+          <form id="contentTaskForm" class="form-grid">
+            <div class="form-field">
+              <label>Date</label>
+              <input type="date" name="date" required />
+            </div>
+            <div class="form-field">
+              <label>File Name / Topic</label>
+              <input type="text" name="fileName" placeholder="e.g. reel_laptop_offer_01 / Eid Offer Reel" required />
+            </div>
+            <div class="form-field full-width">
+              <label>Video Link</label>
+              <input type="url" name="videoLink" placeholder="Drive / Drive-folder / raw file link" />
+            </div>
+            <div class="form-field">
+              <label>Assigned To</label>
+              <select name="assignedTo" required>
+                <option value="">Select person</option>
+                <option value="Mahfuj">Mahfuj</option>
+                <option value="Mahdi">Mahdi</option>
+                <option value="Huzaifa">Huzaifa</option>
+                <option value="Sanjida">Sanjida</option>
+                <option value="Abdullah">Abdullah</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Status</label>
+              <select name="status">
+                <option value="Pending">Pending</option>
+                <option value="First Version">First Version</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div class="form-field full-width">
+              <label>Thumbnail Link</label>
+              <input type="url" name="thumbnailLink" placeholder="Optional thumbnail image link" />
+            </div>
+            <div class="form-field full-width">
+              <label>Caption</label>
+              <input type="text" name="caption" placeholder="Caption / post copy" />
+            </div>
+            <div class="form-field full-width task-checklist">
+              <label class="checkbox-field">
+                <input type="checkbox" name="beforeFinal" />
+                <span>Before Final Reviewed</span>
+              </label>
+              <label class="checkbox-field">
+                <input type="checkbox" name="deliveryFinalized" />
+                <span>Project Delivery Finalized</span>
+              </label>
+              <label class="checkbox-field">
+                <input type="checkbox" name="thumbnailReady" />
+                <span>Thumbnail Ready</span>
+              </label>
+              <label class="checkbox-field">
+                <input type="checkbox" name="uploadedToSocial" />
+                <span>Uploaded to YT / FB</span>
+              </label>
+            </div>
+            <div class="form-actions full-width">
+              <button type="submit" class="btn btn-primary">Add Task</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-card">
+          <h3>Task Board</h3>
+          <div id="taskCards" class="task-cards"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SECURE VAULT TAB ================= -->
+    <section class="tab-panel" id="tab-vault">
+      <div class="panel-header">
+        <div>
+          <h1>Secure Vault</h1>
+          <p class="subtitle">Store sensitive logins, banking and merchant details</p>
+        </div>
+      </div>
+
+      <div class="vault-disclaimer">
+        ⚠️ This vault is convenient, not a hardened password manager: entries are kept as plain values in your private Google Sheet, protected only by this app's PIN and your Sheet/Drive sharing settings. Anyone with edit access to the underlying Sheet, or the deployed script URL, can read every entry. Keep the Apps Script deployment access restricted, don't share the app link publicly, and avoid storing your single highest-value credential (e.g. your main bank login) here if you can help it.
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel-card">
+          <h3>New Vault Entry</h3>
+          <form id="vaultForm" class="form-grid">
+            <div class="form-field full-width">
+              <label>Title / Service Name</label>
+              <input type="text" name="title" placeholder="e.g. Facebook Page, Bkash Merchant, Office WiFi" required />
+            </div>
+            <div class="form-field">
+              <label>Category</label>
+              <select name="category" required>
+                <option value="Social Media">Social Media</option>
+                <option value="Bank">Bank</option>
+                <option value="Bkash/Nagad">Bkash / Nagad</option>
+                <option value="WiFi">WiFi</option>
+                <option value="Utility">Utility</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Username / Account Number</label>
+              <input type="text" name="username" placeholder="Username, email or account no." />
+            </div>
+            <div class="form-field full-width">
+              <label>Password / PIN</label>
+              <div class="vault-secret-input">
+                <input type="password" name="secret" id="vaultSecretInput" placeholder="Password or PIN" required />
+                <button type="button" class="vault-toggle-btn" id="vaultFormToggleBtn" title="Show/Hide">👁</button>
+              </div>
+            </div>
+            <div class="form-field full-width">
+              <label>Notes</label>
+              <input type="text" name="notes" placeholder="Optional notes" />
+            </div>
+            <div class="form-actions full-width">
+              <button type="submit" class="btn btn-primary">Save to Vault</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-card">
+          <h3>Stored Entries</h3>
+          <input type="text" id="vaultSearchInput" placeholder="Search by title, category or username" class="vault-search" />
+          <div id="vaultCards" class="vault-cards"></div>
+        </div>
+      </div>
     </section>
 
   </main>
+</div>
+
+<!-- ================= LOGO / BRANDING MODAL ================= -->
+<div id="logoModalOverlay" class="logo-modal-overlay hidden">
+  <div class="logo-modal">
+    <h3>Shop Logo</h3>
+    <p class="muted-text">Upload your shop logo. It's stored locally on this device and shown on the splash screen, sidebar and top bar.</p>
+    <div class="logo-modal-preview" id="logoModalPreview">OT</div>
+    <label for="logoFileInput" class="logo-file-label">Choose Image File</label>
+    <input type="file" id="logoFileInput" accept="image/*" />
+    <div class="logo-modal-actions">
+      <button id="logoSaveBtn" class="btn btn-primary">Save Logo</button>
+      <button id="logoRemoveBtn" class="btn btn-secondary">Remove</button>
+    </div>
+    <button id="logoModalCloseBtn" class="logo-modal-close">Close</button>
+  </div>
 </div>
 
 <div id="toastContainer" class="toast-container"></div>
