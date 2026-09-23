@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orion Tech | CRM &amp; ERP</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Mobile Topbar -->
+  <header class="mobile-topbar">
+    <button id="menuToggle" class="icon-btn" aria-label="Toggle Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <span class="mobile-brand">Orion Tech</span>
+    <span></span>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">OT</div>
+      <div class="brand-text">
+        <strong>Orion Tech</strong>
+        <span>CRM &amp; ERP</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-tab="dashboard">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" fill="currentColor"/></svg>
+        <span>CEO Dashboard</span>
+      </button>
+      <button class="nav-item" data-tab="sales">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M16 11V7a4 4 0 10-8 0v4M5 9h14l1 11H4L5 9z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Sales &amp; Warranty</span>
+      </button>
+      <button class="nav-item" data-tab="inventory">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Inventory &amp; Suppliers</span>
+      </button>
+      <button class="nav-item" data-tab="accounts">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Accounts &amp; HR</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span id="connStatus" class="status-dot offline"></span>
+      <span id="connText">Connecting...</span>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- ================= DASHBOARD TAB ================= -->
+    <section class="tab-panel active" id="tab-dashboard">
+      <div class="panel-header">
+        <div>
+          <h1>CEO Dashboard</h1>
+          <p class="subtitle">Real-time overview of shop performance</p>
+        </div>
+        <div class="filter-bar">
+          <select id="filterMonth">
+            <option value="">All Months</option>
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+          <select id="filterYear"></select>
+          <button id="applyFilterBtn" class="btn btn-primary">Apply</button>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon sales-icon">💰</div>
+          <div class="stat-info">
+            <span class="stat-label">Total Sales</span>
+            <span class="stat-value" id="statTotalSales">৳0</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon due-icon">⏳</div>
+          <div class="stat-info">
+            <span class="stat-label">Total Dues</span>
+            <span class="stat-value" id="statTotalDues">৳0</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon expense-icon">📉</div>
+          <div class="stat-info">
+            <span class="stat-label">Total Expenses</span>
+            <span class="stat-value" id="statTotalExpenses">৳0</span>
+          </div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-icon profit-icon">📈</div>
+          <div class="stat-info">
+            <span class="stat-label">Net Profit</span>
+            <span class="stat-value" id="statNetProfit">৳0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>Quick Summary</h3>
+        <p id="dashboardSummaryText" class="muted-text">Loading dashboard data...</p>
+      </div>
+    </section>
+
+    <!-- ================= SALES TAB ================= -->
+    <section class="tab-panel" id="tab-sales">
+      <div class="panel-header">
+        <div>
+          <h1>Sales &amp; Warranty CRM</h1>
+          <p class="subtitle">Record sales and check warranty / due status</p>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel-card">
+          <h3>New Sale Entry</h3>
+          <form id="salesForm" class="form-grid">
+            <div class="form-field">
+              <label>Date</label>
+              <input type="date" name="date" required />
+            </div>
+            <div class="form-field">
+              <label>Buyer Name</label>
+              <input type="text" name="buyerName" placeholder="Full name" required />
+            </div>
+            <div class="form-field">
+              <label>Phone Number</label>
+              <input type="tel" name="phone" placeholder="01xxxxxxxxx" required />
+            </div>
+            <div class="form-field">
+              <label>Location</label>
+              <input type="text" name="location" placeholder="Address / area" />
+            </div>
+            <div class="form-field">
+              <label>Laptop Model</label>
+              <input type="text" name="laptopModel" placeholder="e.g. Dell Latitude 5490" required />
+            </div>
+            <div class="form-field">
+              <label>Processor</label>
+              <input type="text" name="processor" placeholder="e.g. Core i5 8th Gen" />
+            </div>
+            <div class="form-field">
+              <label>RAM</label>
+              <input type="text" name="ram" placeholder="e.g. 8GB" />
+            </div>
+            <div class="form-field">
+              <label>SSD / Storage</label>
+              <input type="text" name="ssd" placeholder="e.g. 256GB SSD" />
+            </div>
+            <div class="form-field full-width">
+              <label>Serial Number (Warranty Key)</label>
+              <input type="text" name="serialNumber" placeholder="Device serial number" required />
+            </div>
+            <div class="form-field">
+              <label>Price (৳)</label>
+              <input type="number" name="price" min="0" step="0.01" required />
+            </div>
+            <div class="form-field">
+              <label>Due Amount (৳)</label>
+              <input type="number" name="dueAmount" min="0" step="0.01" value="0" />
+            </div>
+            <div class="form-actions full-width">
+              <button type="submit" class="btn btn-primary">Save Sale Record</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-card">
+          <h3>Warranty / Due Lookup</h3>
+          <div class="search-row">
+            <input type="text" id="customerSearchInput" placeholder="Search by Phone or Serial Number" />
+            <button id="customerSearchBtn" class="btn btn-secondary">Search</button>
+          </div>
+          <div id="searchResults" class="search-results"></div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>Recent Sales</h3>
+        <div class="table-wrap">
+          <table class="data-table" id="salesTable">
+            <thead>
+              <tr>
+                <th>Date</th><th>Buyer</th><th>Phone</th><th>Model</th><th>Serial</th><th>Price</th><th>Due</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= INVENTORY TAB ================= -->
+    <section class="tab-panel" id="tab-inventory">
+      <div class="panel-header">
+        <div>
+          <h1>Inventory &amp; Suppliers</h1>
+          <p class="subtitle">Track supplier deals with proof video/image</p>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel-card">
+          <h3>New Supplier Deal</h3>
+          <form id="supplierForm" class="form-grid">
+            <div class="form-field">
+              <label>Date</label>
+              <input type="date" name="date" required />
+            </div>
+            <div class="form-field">
+              <label>Supplier Name</label>
+              <input type="text" name="supplierName" placeholder="Supplier / vendor name" required />
+            </div>
+            <div class="form-field">
+              <label>Laptop Model</label>
+              <input type="text" name="laptopModel" placeholder="e.g. HP EliteBook 840" required />
+            </div>
+            <div class="form-field">
+              <label>Buy Price (৳)</label>
+              <input type="number" name="buyPrice" min="0" step="0.01" required />
+            </div>
+            <div class="form-field full-width">
+              <label>Deal Proof (Video / Image)</label>
+              <input type="file" name="file" id="supplierFileInput" accept="image/*,video/*" />
+              <span class="file-hint" id="fileHint">No file selected</span>
+            </div>
+            <div class="form-actions full-width">
+              <button type="submit" class="btn btn-primary" id="supplierSubmitBtn">Save Supplier Record</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-card">
+          <h3>Supplier History</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="suppliersTable">
+              <thead>
+                <tr>
+                  <th>Date</th><th>Supplier</th><th>Model</th><th>Buy Price</th><th>File</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ACCOUNTS / HR TAB ================= -->
+    <section class="tab-panel" id="tab-accounts">
+      <div class="panel-header">
+        <div>
+          <h1>Accounts &amp; HR</h1>
+          <p class="subtitle">Daily costs, owner withdrawals, and salaries</p>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel-card">
+          <h3>Daily Shop Expense</h3>
+          <form id="expenseForm" class="form-grid">
+            <div class="form-field">
+              <label>Date</label>
+              <input type="date" name="date" required />
+            </div>
+            <div class="form-field">
+              <label>Category</label>
+              <select name="category" required>
+                <option value="">Select category</option>
+                <option value="Rent">Rent</option>
+                <option value="Accessories">Accessories</option>
+                <option value="Tea/Snacks">Tea / Snacks</option>
+                <option value="Utility">Utility</option>
+                <option value="Transport">Transport</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-field full-width">
+              <label>Description</label>
+              <input type="text" name="description" placeholder="Short description" />
+            </div>
+            <div class="form-field full-width">
+              <label>Amount (৳)</label>
+              <input type="number" name="amount" min="0" step="0.01" required />
+            </div>
+            <div class="form-actions full-width">
+              <button type="submit" class="btn btn-primary">Add Expense</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-card">
+          <h3>Owner / Employee Payment</h3>
+          <form id="hrForm" class="form-grid">
+            <div class="form-field">
+              <label>Date</label>
+              <input type="date" name="date" required />
+            </div>
+            <div class="form-field">
+              <label>Type</label>
+              <select name="type" required>
+                <option value="">Select type</option>
+                <option value="Owner Withdrawal">Owner Withdrawal</option>
+                <option value="Salary">Employee Salary</option>
+              </select>
+            </div>
+            <div class="form-field full-width">
+              <label>Person</label>
+              <select name="personName" required>
+                <option value="">Select person</option>
+                <option value="Shamim">Shamim (Owner)</option>
+                <option value="Mafuj">Mafuj (Owner)</option>
+                <option value="Huzaifa">Huzaifa (Employee)</option>
+                <option value="Najmul">Najmul (Employee)</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Amount (৳)</label>
+              <input type="number" name="amount" min="0" step="0.01" required />
+            </div>
+            <div class="form-field">
+              <label>Notes</label>
+              <input type="text" name="notes" placeholder="Optional note" />
+            </div>
+            <div class="form-actions full-width">
+              <button type="submit" class="btn btn-primary">Add Record</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel-card">
+          <h3>Recent Expenses</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="expensesTable">
+              <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel-card">
+          <h3>Recent HR / Withdrawals</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="hrTable">
+              <thead><tr><th>Date</th><th>Type</th><th>Person</th><th>Amount</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
