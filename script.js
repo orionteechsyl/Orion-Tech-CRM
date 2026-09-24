@@ -5,7 +5,7 @@
 ========================================================== */
 
 // !!! IMPORTANT: Replace with your deployed Google Apps Script Web App URL !!!
-const API_URL = "https://script.google.com/macros/s/AKfycbxOHRx6hwrVXW0B1IRUO_BbsluyNYiYEkLEFLDVjkpDuNo7ZIogiGp2tcFwG_lwkHcJ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw9ARTC2v4idwkoZKE1jjUqykl-1oMbrU7i4VcYnyplJwuzayCUu6PhcuUA67aYn0M4/exec";
 
 // Default PIN (change here). Session is remembered in localStorage.
 const DEFAULT_PIN = "1466";
